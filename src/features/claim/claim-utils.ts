@@ -1,0 +1,6 @@
+import { v4 as uuidv4 } from "uuid";
+
+export function createIdempotencyKey() { return `${uuidv4().replaceAll("-", "")}${uuidv4().replaceAll("-", "")}`.slice(0, 60); }
+export function isValidAmount(value: string, decimals: number) { return new RegExp(`^(0|[1-9]\\d*)(?:\\.\\d{1,${decimals}})?$`).test(value); }
+export function compareDecimals(left: string, right: string) { const scale = Math.max(left.split(".")[1]?.length ?? 0, right.split(".")[1]?.length ?? 0); const asInteger = (value: string) => BigInt(value.replace(".", "").padEnd(value.replace(".", "").length + scale - (value.split(".")[1]?.length ?? 0), "0")); return asInteger(left) - asInteger(right); }
+export function subtractDecimals(amount: string, fee: string) { const scale = Math.max(amount.split(".")[1]?.length ?? 0, fee.split(".")[1]?.length ?? 0); const asInteger = (value: string) => BigInt(value.replace(".", "").padEnd(value.replace(".", "").length + scale - (value.split(".")[1]?.length ?? 0), "0")); const result = asInteger(amount) - asInteger(fee); if (result <= 0n) return "0"; const raw = result.toString().padStart(scale + 1, "0"); return scale === 0 ? raw : `${raw.slice(0, -scale)}.${raw.slice(-scale)}`.replace(/\.0+$/, ""); }
