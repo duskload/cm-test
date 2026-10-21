@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
   RefreshControl,
@@ -26,17 +26,20 @@ export function ActivityScreen() {
   const [page, setPage] = useState<ActivityPage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const requestVersion = useRef(0);
   const cursor = cursors[pageIndex] ?? null;
 
   const loadPage = useCallback(async () => {
+    const requestId = ++requestVersion.current;
     setLoading(true);
     setError(null);
     try {
-      setPage(await getActivity({ cursor, limit }));
+      const nextPage = await getActivity({ cursor, limit });
+      if (requestId === requestVersion.current) setPage(nextPage);
     } catch {
-      setError("We couldn’t load your activity. Please try again.");
+      if (requestId === requestVersion.current) setError("We couldn’t load your activity. Please try again.");
     } finally {
-      setLoading(false);
+      if (requestId === requestVersion.current) setLoading(false);
     }
   }, [cursor, limit]);
 
@@ -61,6 +64,9 @@ export function ActivityScreen() {
     ]);
     setPageIndex((index) => index + 1);
   };
+  const goToPage = useCallback((index: number) => {
+    if (index >= 0 && index < cursors.length) setPageIndex(index);
+  }, [cursors.length]);
   const renderActivityItem = useCallback(
     ({ item }: ListRenderItemInfo<ActivityItem>) => <ActivityRow item={item} />,
     [],
@@ -96,6 +102,7 @@ export function ActivityScreen() {
           hasNext={Boolean(page?.nextCursor)}
           limit={limit}
           onNext={goToNext}
+          onPageSelect={goToPage}
           onPrevious={goToPrevious}
           pageIndex={pageIndex}
           onSelectLimit={selectLimit}
@@ -110,7 +117,6 @@ const styles = StyleSheet.create({
   content: {
     backgroundColor: colors.background,
     flexGrow: 1,
-    gap: 12,
     padding: 16,
     paddingBottom: 32,
   },
