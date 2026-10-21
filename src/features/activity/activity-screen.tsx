@@ -1,13 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  type ListRenderItemInfo,
+  View,
+} from "react-native";
 
 import { colors } from "../../design-system/colors";
-import { getActivity, type ActivityPage } from "./activity-api";
+import { getActivity, type ActivityItem, type ActivityPage } from "./activity-api";
+import { type PageLimit } from "./activity-pagination-config";
+import { ActivityListEmpty } from "./components/activity-list-empty";
+import { ActivityListFooter } from "./components/activity-list-footer";
+import { ActivityListHeader } from "./components/activity-list-header";
 import { ActivityRow } from "./components/activity-row";
-import { ActivityPagination } from "./components/activity-pagination";
 
-const PAGE_LIMITS = [10, 20, 50, 100] as const;
-type PageLimit = (typeof PAGE_LIMITS)[number];
+const ACTIVITY_ROW_HEIGHT = 116;
+const ROW_SEPARATOR_HEIGHT = 12;
+function ActivitySeparator() { return <View style={styles.separator} />; }
 
 export function ActivityScreen() {
   const [limit, setLimit] = useState<PageLimit>(20);
@@ -21,12 +31,18 @@ export function ActivityScreen() {
   const loadPage = useCallback(async () => {
     setLoading(true);
     setError(null);
-    try { setPage(await getActivity({ cursor, limit })); }
-    catch { setError("We couldn’t load your activity. Please try again."); }
-    finally { setLoading(false); }
+    try {
+      setPage(await getActivity({ cursor, limit }));
+    } catch {
+      setError("We couldn’t load your activity. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }, [cursor, limit]);
 
-  useEffect(() => { void Promise.resolve().then(loadPage); }, [loadPage]);
+  useEffect(() => {
+    void Promise.resolve().then(loadPage);
+  }, [loadPage]);
 
   const selectLimit = (nextLimit: PageLimit) => {
     setLimit(nextLimit);
@@ -34,27 +50,69 @@ export function ActivityScreen() {
     setPageIndex(0);
     setPage(null);
   };
-  const goToPrevious = () => { if (pageIndex > 0) setPageIndex((index) => index - 1); };
+  const goToPrevious = () => {
+    if (pageIndex > 0) setPageIndex((index) => index - 1);
+  };
   const goToNext = () => {
     if (!page?.nextCursor) return;
-    setCursors((currentCursors) => [...currentCursors.slice(0, pageIndex + 1), page.nextCursor!]);
+    setCursors((currentCursors) => [
+      ...currentCursors.slice(0, pageIndex + 1),
+      page.nextCursor!,
+    ]);
     setPageIndex((index) => index + 1);
   };
+  const renderActivityItem = useCallback(
+    ({ item }: ListRenderItemInfo<ActivityItem>) => <ActivityRow item={item} />,
+    [],
+  );
+  const getItemLayout = useCallback(
+    (_: ArrayLike<ActivityItem> | null | undefined, index: number) => ({
+      index,
+      length: ACTIVITY_ROW_HEIGHT + ROW_SEPARATOR_HEIGHT,
+      offset: (ACTIVITY_ROW_HEIGHT + ROW_SEPARATOR_HEIGHT) * index,
+    }),
+    [],
+  );
 
-  return <FlatList contentContainerStyle={styles.content} data={page?.items ?? []} keyExtractor={(item) => item.id}
-    ListHeaderComponent={<View style={styles.header}><Text style={styles.title}>Activity</Text><Text style={styles.description}>Your accruals, reversals, and claims.</Text><Text style={styles.limitLabel}>Items per page</Text><View style={styles.limitList}>{PAGE_LIMITS.map((item) => <Pressable key={item} accessibilityRole="button" onPress={() => selectLimit(item)} style={[styles.limitButton, limit === item && styles.limitButtonSelected]}><Text style={[styles.limitText, limit === item && styles.limitTextSelected]}>{item}</Text></Pressable>)}</View></View>}
-    ListEmptyComponent={<ActivityEmpty error={error} loading={loading} onRetry={loadPage} />}
-    refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void loadPage()} tintColor={colors.primary} />}
-    renderItem={({ item }) => <ActivityRow item={item} />}
-    ListFooterComponent={page && page.items.length > 0 ? <ActivityPagination hasNext={Boolean(page.nextCursor)} onNext={goToNext} onPrevious={goToPrevious} pageIndex={pageIndex} /> : undefined}
-    showsVerticalScrollIndicator={false}
-  />;
-}
-
-function ActivityEmpty({ error, loading, onRetry }: { error: string | null; loading: boolean; onRetry: () => void }) {
-  return <View style={styles.empty}>{loading ? <ActivityIndicator color={colors.primary} size="large" /> : <><Text style={styles.emptyTitle}>{error ? "Couldn’t load activity" : "No activity yet"}</Text><Text style={styles.emptyText}>{error ?? "Your accruals, reversals, and claims will appear here."}</Text>{error && <Pressable onPress={onRetry} style={styles.retry}><Text style={styles.retryText}>Try again</Text></Pressable>}</>}</View>;
+  return (
+    <FlatList
+      contentContainerStyle={styles.content}
+      data={page?.items ?? []}
+      getItemLayout={getItemLayout}
+      ItemSeparatorComponent={ActivitySeparator}
+      keyExtractor={(item) => item.id}
+      ListHeaderComponent={ActivityListHeader}
+      ListEmptyComponent={<ActivityListEmpty error={error} loading={loading} onRetry={loadPage} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={loading}
+          onRefresh={() => void loadPage()}
+          tintColor={colors.primary}
+        />
+      }
+      renderItem={renderActivityItem}
+      ListFooterComponent={
+        <ActivityListFooter
+          hasNext={Boolean(page?.nextCursor)}
+          limit={limit}
+          onNext={goToNext}
+          onPrevious={goToPrevious}
+          pageIndex={pageIndex}
+          onSelectLimit={selectLimit}
+        />
+      }
+      showsVerticalScrollIndicator={false}
+    />
+  );
 }
 
 const styles = StyleSheet.create({
-  content: { backgroundColor: colors.background, flexGrow: 1, gap: 12, padding: 16, paddingBottom: 32 }, header: { marginBottom: 8 }, title: { color: colors.text, fontSize: 28, fontWeight: "800" }, description: { color: colors.textMuted, fontSize: 15, lineHeight: 22, marginTop: 6 }, limitLabel: { color: colors.text, fontSize: 13, fontWeight: "800", marginTop: 20 }, limitList: { flexDirection: "row", gap: 8, marginTop: 8 }, limitButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 8, borderWidth: 1, minWidth: 48, paddingHorizontal: 10, paddingVertical: 8 }, limitButtonSelected: { backgroundColor: colors.primary, borderColor: colors.primary }, limitText: { color: colors.textMuted, fontWeight: "800" }, limitTextSelected: { color: colors.onPrimary }, empty: { alignItems: "center", paddingHorizontal: 28, paddingTop: 80 }, emptyTitle: { color: colors.text, fontSize: 18, fontWeight: "800" }, emptyText: { color: colors.textMuted, fontSize: 15, lineHeight: 22, marginTop: 8, textAlign: "center" }, retry: { backgroundColor: colors.primary, borderRadius: 10, marginTop: 20, paddingHorizontal: 18, paddingVertical: 12 }, retryText: { color: colors.onPrimary, fontWeight: "800" },
+  content: {
+    backgroundColor: colors.background,
+    flexGrow: 1,
+    gap: 12,
+    padding: 16,
+    paddingBottom: 32,
+  },
+  separator: { height: ROW_SEPARATOR_HEIGHT },
 });

@@ -1,0 +1,40 @@
+.activity-pagination {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.activity-pagination li { display: flex; }
+
+.activity-pagination a {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e7ecf3;
+  border-radius: 10px;
+  color: #075985;
+  cursor: pointer;
+  display: flex;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  text-decoration: none;
+}
+
+.activity-pagination .selected a {
+  background: #075985;
+  border-color: #075985;
+  color: #ffffff;
+}
+
+.activity-pagination .disabled a {
+  background: #f7f9fc;
+  color: #607086;
+  cursor: default;
+}
