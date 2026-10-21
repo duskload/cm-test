@@ -8,18 +8,34 @@ import { formatNumber } from "../balance-utils";
 type Props = { balance: Balance; compact: boolean; onPress: () => void };
 
 export function AssetBalanceRow({ balance, compact, onPress }: Props) {
-  const isAvailable = Number(balance.available) > 0;
-  const isClaiming = Number(balance.claiming) > 0;
-  const status = isClaiming ? "Claim in progress" : isAvailable ? "Available now" : "Not available";
+  const isAvailable = parseFloat(balance?.available ?? "0") > 0;
+  const isClaiming = parseFloat(balance?.claiming ?? "0") > 0;
+
+  const status = isClaiming
+    ? "Claim in progress"
+    : isAvailable
+      ? "Available now"
+      : "Not available";
+
   return (
-    <Pressable accessibilityRole="button" disabled={!isAvailable} onPress={onPress} style={({ pressed }) => [styles.card, compact && styles.cardCompact, !isAvailable && styles.cardUnavailable, pressed && isAvailable && styles.cardPressed]}>
+    <Pressable
+      accessibilityRole="button"
+      disabled={!isAvailable}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        compact && styles.cardCompact,
+        !isAvailable && styles.cardUnavailable,
+        pressed && isAvailable && styles.cardPressed,
+      ]}
+    >
       <View style={styles.assetGroup}>
         <View style={styles.assetIcon}>
           <Text style={styles.assetInitial}>{balance.asset.slice(0, 1)}</Text>
         </View>
         <View>
           <Text style={styles.asset}>{balance.asset}</Text>
-          <Text style={styles.price}>${formatNumber(balance.usdPrice)} per unit</Text>
+          <Text style={styles.price}>${formatNumber(balance.usdPrice)}</Text>
         </View>
       </View>
       <View style={[styles.amounts, compact && styles.amountsCompact]}>
@@ -31,7 +47,14 @@ export function AssetBalanceRow({ balance, compact, onPress }: Props) {
         >
           {formatAssetAmount(balance.available, balance.asset)}
         </Text>
-        <Text style={[styles.availableLabel, !isAvailable && styles.unavailableLabel]}>{status}</Text>
+        <Text
+          style={[
+            styles.availableLabel,
+            !isAvailable && styles.unavailableLabel,
+          ]}
+        >
+          {status}
+        </Text>
       </View>
     </Pressable>
   );
@@ -49,7 +72,12 @@ const styles = StyleSheet.create({
     height: 104,
     padding: 16,
   },
-  cardCompact: { alignItems: "flex-start", flexDirection: "column", gap: 14, height: 142 },
+  cardCompact: {
+    alignItems: "flex-start",
+    flexDirection: "column",
+    gap: 14,
+    height: 142,
+  },
   cardPressed: { opacity: 0.76 },
   cardUnavailable: { opacity: 0.62 },
   assetGroup: {
@@ -66,7 +94,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 40,
   },
-  assetInitial: { color: colors.primaryStrong, fontSize: 17, fontWeight: "800" },
+  assetInitial: {
+    color: colors.primaryStrong,
+    fontSize: 17,
+    fontWeight: "800",
+  },
   asset: { color: colors.text, fontSize: 17, fontWeight: "800" },
   price: { color: colors.textMuted, fontSize: 12, marginTop: 3 },
   amounts: { alignItems: "flex-end", flexShrink: 1, marginLeft: 12 },
