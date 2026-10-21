@@ -263,3 +263,9 @@ Let's remove 50 and 100 options from pagination and show 5 and 15 instead: 5, 10
 ## 6. Conversation log
 
 Let's save all my prompts to you from the start of this conversation, create folder `ai-logs/` and place it into `Prompts.md` file in it.
+
+## 7. Cloudflare Pages deployment
+
+I use `npx wrangler pages deploy dist --project-name=cm-test`.
+
+How to fix it?
