@@ -71,9 +71,17 @@ API contract:
 - Base URL: `https://task-api.cashmine.io`
 - Send your token from the task email on every `/v1` request.
 
+### Assistant response
+
+Implemented the Expo Router entry routes, onboarding token form, persisted Zustand auth state, and a fetch-based JSON API client with typed handling for the specified HTTP errors. Added the initial balances request and made Balance the default authenticated route.
+
 ## 2. Architecture
 
 Let's follow feature-based architecture, EACH screen is a separated feature, I expect balance to have its own feature folder and all helper functions / components must belong to that feature. Write it to AGENTS.md.
+
+### Assistant response
+
+Updated `AGENTS.md` with the feature-based architecture rule: each screen lives in its own feature folder and feature-specific helpers and components stay with that feature.
 
 ## 3. Balance UI plan
 
@@ -126,6 +134,10 @@ Yes, my mistake, use it.
 Make it a rule in AGENTS.md to use it for any numbers for assets.
 
 Assets available numbers in make claim should follow the same numbers pattern (decimals etc as it does follow in the rest of the project). Write it down to AGENTS.md.
+
+### Assistant response
+
+Implemented M0 balances with responsive loading, error, retry, freshness, total, and asset-list states. Added role-based design tokens and `Intl.NumberFormat` helpers: two fraction digits by default and five for BTC. Documented the M1 post-claim state approach in `DEVELOPMENT_PLAN.md` and the formatting requirements in `AGENTS.md`.
 
 ## 4. Claims
 
@@ -205,6 +217,10 @@ Let's display backend error if present, for example:
 }
 ```
 
+### Assistant response
+
+Implemented the shared portal-backed dialog root and reusable claim modal. Both Balance and Claim can open the same modal; Balance does not navigate away. Claims validate the amount, use a 60-character UUID-based idempotency key, submit to `/v1/claims`, poll `/v1/claims/:id`, and show clear pending, completed, failed, unavailable, and backend-validation states.
+
 ## 5. Activity
 
 Let's implement activity screen.
@@ -260,12 +276,38 @@ In case of error you should still see pagination and be able to change it.
 
 Let's remove 50 and 100 options from pagination and show 5 and 15 instead: 5, 10, 15, 20.
 
+### Assistant response
+
+Implemented cursor-based activity fetching with limits of 5, 10, 15, and 20. Split the UI into dedicated list components, memoized row rendering, added fixed item layouts, preserved pagination controls during errors, and styled the controls for web and native.
+
 ## 6. Conversation log
 
 Let's save all my prompts to you from the start of this conversation, create folder `ai-logs/` and place it into `Prompts.md` file in it.
 
+### Assistant response
+
+Created this conversation log at `ai-logs/Prompts.md`.
+
 ## 7. Cloudflare Pages deployment
+
+I can't launch it on Cloudflare pages, it's just empty screen - why?
+
+### Assistant response
+
+Diagnosed two causes: the SPA catch-all redirect overrode Expo's static route files, and the root route read Zustand hydration imperatively and rendered nothing for a first-time visitor.
 
 I use `npx wrangler pages deploy dist --project-name=cm-test`.
 
 How to fix it?
+
+### Assistant response
+
+Removed the SPA `_redirects` rule and changed the root route to subscribe to Zustand's hydration lifecycle with `useSyncExternalStore`. Rebuilt the static export and verified that `dist/_redirects` is absent. The deploy command is correct after running `npm run build:web`.
+
+## 9. Conversation log correction
+
+Correct the Prompts.md, the records in `ai-logs/Prompts.md` should include your answers as well.
+
+### Assistant response
+
+Updated the log to include concise assistant responses for every recorded workstream, including code review and Cloudflare troubleshooting.
